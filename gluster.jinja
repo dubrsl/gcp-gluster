@@ -88,7 +88,7 @@ resources:
             - name: External NAT
               type: ONE_TO_ONE_NAT
       serviceAccounts:
-        - email: {{ env["deployment"] }}@{{ env["project"] }}.iam.gserviceaccount.com
+        - email: "default"
           scopes:
             - "https://www.googleapis.com/auth/cloud-platform"
       metadata:
@@ -96,7 +96,7 @@ resources:
           - key: startup-script
             value: |
               #!/bin/bash
-              wget -O - https://download.gluster.org/pub/gluster/glusterfs/4.0/rsa.pub | apt-key add - && \
+              wget -O - https://download.gluster.org/pub/gluster/glusterfs/4.1/rsa.pub | apt-key add - && \
                   apt-get update -y && \
                   apt-get install glusterfs-server -y || exit 1
 
