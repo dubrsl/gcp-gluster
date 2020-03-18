@@ -8,13 +8,13 @@ resources:
     properties:
       region: us-east1
       zones: ['us-east1-b', 'us-east1-c', 'us-east1-d']
-      image-project: debian-cloud
-      image: debian-9-stretch-v20191121
-      type: f1-micro
+      image-project: centos-cloud
+      image: centos-8-v20200403
+      type: g1-small
       nodes: 3
-      name-stub: 'gluster-demo'
+      name-stub: 'gluster'
       replicas: 3
       arbiters: 1
       vol-name: 'gv0'
-      brick-size: 128
-      mount-point: '/export/sdb1'
+      brick-size: 372
+      mount-point: '/data/lv'

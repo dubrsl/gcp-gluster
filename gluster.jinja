@@ -96,16 +96,24 @@ resources:
           - key: startup-script
             value: |
               #!/bin/bash
-              wget -O - https://download.gluster.org/pub/gluster/glusterfs/4.1/rsa.pub | apt-key add - && \
-                  apt-get update -y && \
-                  apt-get install glusterfs-server -y || exit 1
 
-              echo -e "o\nn\np\n1\n\n\nw" | fdisk /dev/sdb && \
-                  mkfs -t ext4 /dev/sdb1 && \
-                  mkdir -p {{ mnt_pnt }} && \
-                  mount /dev/sdb1 {{ mnt_pnt }} && \
-                  mkdir -p {{ mnt_pnt }}/brick && \
-                  echo "/dev/sdb1 {{ mnt_pnt }}/brick ext4 defaults 0 0"  >> /etc/fstab || exit 1
+              dnf -y upgrade && dnf config-manager --add-repo https://download.gluster.org/pub/gluster/glusterfs/LATEST/CentOS/glusterfs-rhel8.repo && \
+                  dnf -y install mc psmisc wget curl glibc-langpack-ru glusterfs-rdma glusterfs-fuse glusterfs glusterfs-server glusterfs-geo-replication glusterfs-cloudsync-plugins && \
+                  dnf -y clean all || exit 1
+
+              firewall-cmd --add-service=glusterfs --permanent && firewall-cmd --reload || exit 1
+              systemctl restart glusterd.service || exit 1
+              systemctl enable glusterd.service || exit 1
+
+              pvcreate /dev/sdb && \
+              vgcreate vg /dev/sdb && \
+              lvcreate -L 100G -T vg/thinpool && \
+              lvcreate -V 100G -T vg/thinpool -n lv && \
+              mkfs.xfs /dev/vg/lv && \
+              mkdir -p {{ mnt_pnt }} && \
+              mount /dev/vg/lv {{ mnt_pnt }} && \
+              mkdir -p {{ mnt_pnt }}/brick && \
+              echo "/dev/vg/lv {{ mnt_pnt }}/brick xfs defaults 0 0"  >> /etc/fstab || exit 1
 
               gcloud beta runtime-config configs variables set brick-completed/{{ name_stub }}-{{ n }} \
                      "TRUE" --config-name {{ startup_cfg }} --is-text || exit 1
