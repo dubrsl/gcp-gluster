@@ -42,7 +42,7 @@ resources:
     properties:
       parent: $(ref.{{ startup_cfg }}.name)
       waiter: {{ vol_waiter }}
-      timeout: 300s
+      timeout: 500s
       success:
         cardinality:
           path: /deployment-success
@@ -94,13 +94,12 @@ resources:
             value: |
               #!/bin/bash
 
-              dnf -y upgrade && dnf config-manager --add-repo https://download.gluster.org/pub/gluster/glusterfs/LATEST/CentOS/glusterfs-rhel8.repo && \
-                  dnf -y install mc psmisc wget curl glibc-langpack-ru glusterfs-rdma glusterfs-fuse glusterfs glusterfs-server glusterfs-geo-replication glusterfs-cloudsync-plugins && \
-                  dnf -y clean all || exit 1
+              dnf -y upgrade && dnf config-manager --add-repo https://buildlogs.centos.org/centos/8/storage/x86_64/gluster-7/ && \
+                  dnf -y --nogpgcheck install mc nscd psmisc wget curl glibc-langpack-ru glusterfs-rdma glusterfs-fuse glusterfs glusterfs-server glusterfs-geo-replication glusterfs-cloudsync-plugins || exit 1
 
               firewall-cmd --add-service=glusterfs --permanent && firewall-cmd --reload || exit 1
-              systemctl restart glusterd.service || exit 1
-              systemctl enable glusterd.service || exit 1
+              systemctl restart glusterd.service nscd.service || exit 1
+              systemctl enable glusterd.service nscd.service || exit 1
 
               pvcreate /dev/sdb && \
               vgcreate vg /dev/sdb && \
@@ -112,8 +111,9 @@ resources:
               mkdir -p {{ mnt_pnt }}/brick && \
               echo "/dev/vg/lv {{ mnt_pnt }}/brick xfs defaults 0 0"  >> /etc/fstab || exit 1
 
+              echo "Runtime configs variables set brick-completed/{{ name_stub }}-{{ n }}"
               gcloud beta runtime-config configs variables set brick-completed/{{ name_stub }}-{{ n }} \
-                     "TRUE" --config-name {{ startup_cfg }} --is-text || exit 1
+                     "TRUE" --config-name {{ startup_cfg }} --is-text || { echo "Can't set brick-completed/{{ name_stub }}-{{ n }}"; exit 1; }
 
               echo 'Removing metadata key startup-script to prevent script re-running on subsequent boots...'
               gcloud compute instances remove-metadata {{ name_stub }}-{{ n }} --zone={{ zone }} --keys=startup-script
@@ -141,6 +141,8 @@ resources:
               {% for x in nodes %}gluster peer probe {{ name_stub }}-{{ x }}
               {% endfor %}
 
+              sleep 5
+              gluster peer status
               gluster volume create {{ vol_name }} replica {{ replicas }} {% for x in nodes %}{{ name_stub }}-{{ x }}:{{ mnt_pnt }}/brick {% endfor %} && \
               gluster volume start {{ vol_name }}
 
@@ -151,7 +153,8 @@ resources:
                 exit 1
               fi
 
+              echo "Runtime configs variables set deployment-success/{{ name_stub }}-{{ n }}"
               gcloud beta runtime-config configs variables set deployment-success/{{ name_stub }}-{{ n }} \
-                     "TRUE" --config-name {{ startup_cfg }} --is-text
+                     "TRUE" --config-name {{ startup_cfg }} --is-text || { echo "Can't set deployment-success/{{ name_stub }}-{{ n }}"; exit 1; }
               {%- endif %}
   {%- endfor %}
