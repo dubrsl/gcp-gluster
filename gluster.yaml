@@ -9,12 +9,12 @@ resources:
       region: us-east1
       zones: ['us-east1-b', 'us-east1-c', 'us-east1-d']
       image-project: centos-cloud
-      image: centos-8-v20200403
+      image: centos-8-v20200413
       type: g1-small
       nodes: 3
-      name-stub: 'gluster'
+      name-stub: 'gluster2'
       replicas: 3
       arbiters: 1
       vol-name: 'gv0'
-      brick-size: 372
+      brick-size: 55
       mount-point: '/data/lv'

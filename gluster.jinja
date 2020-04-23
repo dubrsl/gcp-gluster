@@ -107,8 +107,8 @@ resources:
 
               pvcreate /dev/sdb && \
               vgcreate vg /dev/sdb && \
-              lvcreate -L 100G -T vg/thinpool && \
-              lvcreate -V 100G -T vg/thinpool -n lv && \
+              lvcreate -L 50G -T vg/thinpool && \
+              lvcreate -V 50G -T vg/thinpool -n lv && \
               mkfs.xfs /dev/vg/lv && \
               mkdir -p {{ mnt_pnt }} && \
               mount /dev/vg/lv {{ mnt_pnt }} && \
